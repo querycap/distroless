@@ -1,0 +1,77 @@
+name: publish-base
+
+on:
+  push:
+    branches: [ 'master' ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target:
+          - base/base
+          - base/debug
+          - base/static
+          - cc/cc
+          - cc/debug
+        user:
+          - root
+          - nonroot
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: distroless
+
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Install bazelisk
+        run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.7.1/bazelisk-linux-amd64"
+          mkdir -p "${GITHUB_WORKSPACE}/bin/"
+          mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
+          chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
+
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host
+
+      - id: build
+        run: HUB=localhost:5000/distroless ../hack/build.sh ${{ matrix.target }}:${{ matrix.user }}
+
+      - name: login docker.io
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: login ghcr.io
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            IMAGE=${{ steps.build.outputs.image }}
+          tags: |
+            ${{ steps.build.outputs.mirror_docker }}
+            ${{ steps.build.outputs.mirror_ghcr }}

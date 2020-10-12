@@ -1,0 +1,3 @@
+[submodule "distroless"]
+	path = distroless
+	url = https://github.com/GoogleContainerTools/distroless
