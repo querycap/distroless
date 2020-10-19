@@ -3,8 +3,6 @@ name: publish
 on:
   push:
     branches: [ 'master' ]
-    paths:
-      - .github/workflows/publish.yaml
 
 jobs:
   build:
