@@ -18,7 +18,7 @@ jobs:
 
       - name: Install bazelisk
         run: |
-          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.7.1/bazelisk-linux-amd64"
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.7.3/bazelisk-linux-amd64"
           mkdir -p "${GITHUB_WORKSPACE}/bin/"
           mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
           chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
@@ -42,7 +42,7 @@ jobs:
           USERS: root nonroot
           DISTROS: debian9 debian10
           TOPICS: base debug static
-          ARCHS: amd64 arm64 s390x
+          ARCHS: amd64 arm64 s390x ppc64le
         run: |
           ../hack/bazel_run.sh
           PUSH=1 MANIFEST=1 ../hack/docker_tag_or_push.sh
