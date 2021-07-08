@@ -8,7 +8,7 @@ LANG=${LANG:-"base"}
 TOPICS=${TOPICS:-"static base debug"}
 USERS=${TARGETS:-"root nonroot"}
 ARCHS=${ARCHS:-"amd64 arm64 s390x"}
-DISTROS=${DISTROS:-"debian9 debian10"}
+DISTROS=${DISTROS:-"debian10"}
 
 HUB=${HUB:-localhost:5000/distroless}
 

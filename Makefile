@@ -1,2 +1,2 @@
 update:
-	 git submodule update --remote --force
+	 git submodule update --init --remote --force
