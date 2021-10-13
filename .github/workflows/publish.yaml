@@ -2,7 +2,6 @@ name: publish
 
 on:
   push:
-    branches: [ 'master' ]
 
 jobs:
   build:
@@ -11,24 +10,31 @@ jobs:
       run:
         working-directory: ./distroless
 
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
     steps:
+      - name: login ghcr.io
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
       - uses: actions/checkout@v2
         with:
           submodules: true
 
       - name: Install bazelisk
         run: |
-          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.6.1/bazelisk-linux-amd64"
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.10.1/bazelisk-linux-amd64"
           mkdir -p "${GITHUB_WORKSPACE}/bin/"
           mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
           chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
-
-      - name: login ghcr.io
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.CR_PAT }}
 
       - name: setup
         run: |
@@ -37,7 +43,7 @@ jobs:
 
       - name: build //base:*
         env:
-          HUB: ghcr.io/${{ github.repository }}
+          HUB: ${{ github.ref == 'refs/heads/main' && 'ghcr.io' || 'localhost:5000' }}/${{ github.repository }}
           LANG: base
           USERS: root nonroot
           TOPICS: base debug static
@@ -48,7 +54,7 @@ jobs:
 
       - name: build //cc:*
         env:
-          HUB: ghcr.io/${{ github.repository }}
+          HUB: ${{ github.ref == 'refs/heads/main' && 'ghcr.io' || 'localhost:5000' }}/${{ github.repository }}
           LANG: cc
           USERS: root nonroot
           TOPICS: cc debug
