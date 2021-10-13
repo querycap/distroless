@@ -3,12 +3,23 @@ name: publish
 on:
   push:
 
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: ./distroless
+
+    strategy:
+      matrix:
+        lang:
+          - base
+          - cc
+        distro:
+          - debian10
+          - debian11
 
     services:
       registry:
@@ -41,23 +52,13 @@ jobs:
           bazel build --host_force_python=PY2 //package_manager:dpkg_parser.par
           sed -i 's/^{/{"experimental": "enabled",/g' ~/.docker/config.json
 
-      - name: build //base:*
+      - name: build //${{ matrix.lang }}:*
         env:
           HUB: ${{ github.ref == 'refs/heads/main' && 'ghcr.io' || 'localhost:5000' }}/${{ github.repository }}
-          LANG: base
+          LANG: ${{ matrix.lang }}
           USERS: root nonroot
-          TOPICS: base debug static
-          ARCHS: amd64 arm64
-        run: |
-          ../hack/bazel_run.sh
-          PUSH=1 MANIFEST=1 ../hack/docker_tag_or_push.sh
-
-      - name: build //cc:*
-        env:
-          HUB: ${{ github.ref == 'refs/heads/main' && 'ghcr.io' || 'localhost:5000' }}/${{ github.repository }}
-          LANG: cc
-          USERS: root nonroot
-          TOPICS: cc debug
+          TOPICS: ${{ matrix.lang }} debug ${{ matrix.lang == 'base' && 'static' || ''}}
+          DISTROS: ${{ matrix.distro }}
           ARCHS: amd64 arm64
         run: |
           ../hack/bazel_run.sh

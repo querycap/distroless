@@ -1,8 +1,6 @@
 #!/bin/bash
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -eux;
 
 LANG=${LANG:-"base"}
 TOPICS=${TOPICS:-"static base debug"}
@@ -11,6 +9,7 @@ ARCHS=${ARCHS:-"amd64 arm64 s390x"}
 DISTROS=${DISTROS:-"debian10 debian11"}
 
 HUB=${HUB:-localhost:5000/distroless}
+IMAGE_SOURCE=${IMAGE_SOURCE:-https://github.com/querycap/distroless}
 
 COMMIT_SHA=${COMMIT_SHA:-}
 
@@ -22,11 +21,17 @@ docker_tag_or_push() {
   image_name=$2
   image_tag=$3
 
+  tags="--tag ${HUB}/${image_name}:${image_tag}"
 
   if [[ -n ${COMMIT_SHA} ]]; then
-    docker tag ${bazel_image} ${HUB}/${image_name}:${COMMIT_SHA}-${image_tag}
+    tags="${tags} --tag ${HUB}/${image_name}:${COMMIT_SHA}-${image_tag}"
   fi
-  docker tag ${bazel_image} ${HUB}/${image_name}:${image_tag}
+
+  docker build ${tags} \
+    --label=org.opencontainers.image.source=${IMAGE_SOURCE} \
+    . -f-<<EOF
+FROM ${bazel_image}
+EOF
 
   if [[ -n ${PUSH} ]]; then
       if [[ -n ${COMMIT_SHA} ]]; then
